@@ -1,27 +1,26 @@
 import streamlit as st
 import time
 import os
-import json # Novo: Para ler/escrever o estado de cores de forma robusta
+import json 
 
 # --- Configurações e Variáveis ---
 st.set_page_config(layout="wide", page_title="Sistema de Guichê Unificado")
 
 # --- Variáveis de Lógica ---
-STATE_FILE = "guiche_state.json" # Mudando para JSON
+STATE_FILE = "guiche_state.json" 
 LETRAS_DISPONIVEIS = [chr(i) for i in range(ord('A'), ord('Z') + 1)] 
-NUMEROS_DISPONIVEIS = list(range(1, 31))
-GUICHES_DISPONIVEIS = [f"GUICHÊ {i}" for i in range(1, 21)] # Guichê 1 até 20
+NUMEROS_DISPONIVEIS = list(range(1, 31)) # 1 até 30
+GUICHES_DISPONIVEIS = [f"GUICHÊ {i}" for i in range(1, 21)]
 
 # 🔑 Inicialização de Estado de Controle e Variáveis
 if 'view' not in st.session_state:
     st.session_state.view = 'menu'
+    
+if 'letra_selecionada' not in st.session_state:
+    st.session_state.letra_selecionada = 'A' # Novo estado para a letra atual
 
-# Estado Local (mantido para evitar erros de inicialização)
-if 'ultima_chamada_display' not in st.session_state:
-    st.session_state.ultima_chamada_display = 'A-0'
 
-
-# --- CSS Único para Todo o App (NOVO: Suporte a Cores dos Checkboxes) ---
+# --- CSS Único para Todo o App (NOVO: Container Rolável e Ajustes de Botões) ---
 st.markdown("""
     <style>
     /* Estilos Gerais (Mantidos) */
@@ -35,42 +34,59 @@ st.markdown("""
     .stButton>button { width: 100%; height: 100px; font-size: 24px; background-color: #2ecc71; color: white; border-radius: 10px; margin: 10px 0; }
     [data-testid="stSidebar"], .css-vk3250 { display: none; }
     
-    /* === NOVOS ESTILOS PARA CHECKBOXES === */
+    /* === ESTILOS PARA CHECKBOXES === */
     /* Checkbox Amarelo (Chamando) */
-    .st-ag .yellow-box label {
+    .yellow-box label {
         background-color: #f1c40f !important; /* Amarelo */
         color: black !important;
         border-radius: 8px;
         padding: 8px;
         transition: background-color 0.3s;
+        height: 50px; /* Altura fixa para todos */
+        display: flex;
+        justify-content: center;
+        align-items: center;
     }
     /* Checkbox Verde (Chamado) */
-    .st-ag .green-box label {
+    .green-box label {
         background-color: #2ecc71 !important; /* Verde */
         color: white !important;
         border-radius: 8px;
         padding: 8px;
         transition: background-color 0.3s;
+        height: 50px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
     }
     /* Checkbox Padrão (Não Chamado) */
-    .st-ag .default-box label {
+    .default-box label {
         background-color: #333333; /* Cor neutra para o tema escuro */
         color: white;
         border-radius: 8px;
         padding: 8px;
         transition: background-color 0.3s;
+        height: 50px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
     }
-    /* Ajuste para alinhar checkboxes */
-    [data-testid="stCheckbox"] {
-        margin: 5px 0;
-        border-radius: 8px;
+
+    /* === NOVO CONTAINER ROLÁVEL === */
+    /* Aplica rolagem e altura máxima ao container onde estão as senhas */
+    .stContainerWithScroll {
+        overflow-y: scroll;
+        max-height: 400px; /* Altura máxima para o container */
+        padding: 10px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 10px;
     }
 
     </style>
 """, unsafe_allow_html=True)
 
 # ==========================================================
-## Funções de Estado Compartilhado (JSON - Mais robusto)
+## Funções de Estado Compartilhado
 # ==========================================================
 
 def read_shared_state():
@@ -79,7 +95,7 @@ def read_shared_state():
         'senha_display': 'A-0',
         'vaga': 'GAIOLA ---',
         'history': [],
-        'senhas_status': {} # Novo: Dicionário para rastrear o status de cada senha (cores)
+        'senhas_status': {} 
     }
     if not os.path.exists(STATE_FILE):
         return default_state
@@ -87,7 +103,6 @@ def read_shared_state():
     with open(STATE_FILE, "r") as f:
         try:
             state = json.load(f)
-            # Garante que chaves importantes existam
             if 'senhas_status' not in state:
                 state['senhas_status'] = {}
             return state
@@ -110,10 +125,9 @@ def chamar_senha(senha_completa, vaga_selecionada):
     senhas_status = estado_atual['senhas_status']
     
     # 1. ATUALIZA STATUS DE CORES (Movendo o Status Amarelo anterior para Verde)
-    # Itera sobre o dicionário e move a senha que estava amarela para verde (Chamada Concluída)
     for senha, status in list(senhas_status.items()):
         if status == 'yellow':
-            senhas_status[senha] = 'green' # Muda a senha recém-chamada para verde
+            senhas_status[senha] = 'green'
 
     # 2. Define a nova senha como AMARELA (Sendo Chamada)
     senhas_status[senha_completa] = 'yellow'
@@ -188,82 +202,102 @@ def view_monitor():
     st.rerun() 
 
 # ==========================================================
-## 2. Módulo Atendente (Controle - Checkboxes e Cores)
+## 2. Módulo Atendente (Controle - Grade Rolável)
 # ==========================================================
 def view_atendente():
     estado_atual = read_shared_state()
-    senhas_status = estado_atual['senhas_status'] # Puxa o status das cores
+    senhas_status = estado_atual['senhas_status']
     
     st.title("Sistema de Chamada de Guichê")
 
-    # Display da Última Chamada
     st.subheader(f"Última Chamada: **{estado_atual['senha_display']}** na **{estado_atual['vaga']}**")
     st.markdown("---")
     
     # --- 1. SELEÇÃO DE VAGA (GUICHÊ) ---
-    st.subheader("1. Selecione o Guichê de Atendimento")
-    selected_guiche = st.selectbox(
-        "Guichê de Destino:",
-        GUICHES_DISPONIVEIS,
-        key="select_guiche"
-    )
+    col_guiche, col_letra_select = st.columns([3, 1])
+
+    with col_guiche:
+        st.subheader("1. Selecione o Guichê de Atendimento")
+        selected_guiche = st.selectbox(
+            "Guichê de Destino:",
+            GUICHES_DISPONIVEIS,
+            key="select_guiche"
+        )
+    
+    # --- SELETOR DE LETRA ---
+    with col_letra_select:
+        st.subheader("Letra")
+        # Armazena a letra selecionada no estado da sessão
+        st.session_state.letra_selecionada = st.selectbox(
+            "Filtrar por Letra:",
+            LETRAS_DISPONIVEIS,
+            index=LETRAS_DISPONIVEIS.index(st.session_state.letra_selecionada),
+            key="select_letra"
+        )
+        letra_atual = st.session_state.letra_selecionada
 
     st.markdown("---")
     
-    # --- 2. SELEÇÃO DE SENHAS (CHECKBOXES EM GRADE) ---
-    st.subheader("2. Selecione a Senha para Chamar")
+    # --- 2. SELEÇÃO DE SENHAS (GRID ROLÁVEL) ---
+    st.subheader(f"2. Senhas da Letra **{letra_atual}** (Selecione para Chamar)")
     
-    # Cria a grade de 5 colunas para os checkboxes
-    cols = st.columns(5)
-    
-    senhas_a_chamar = []
-    
-    # Loop para criar os checkboxes
-    for i, letra in enumerate(LETRAS_DISPONIVEIS):
-        for numero in NUMEROS_DISPONIVEIS:
-            senha = f"{letra}{numero}"
+    # NOVO: Container rolável para minimizar espaço
+    with st.container():
+        st.markdown('<div class="stContainerWithScroll">', unsafe_allow_html=True)
+        
+        # Cria 4 colunas para a grade (30/4 = 7.5, vamos usar 8 linhas completas)
+        NUM_COLUNAS = 4
+        COLUNAS_LIST = st.columns(NUM_COLUNAS)
+        
+        senhas_a_chamar = []
+        
+        for numero in NUMEROS_DISPONIVEIS: # 1 a 30
+            senha = f"{letra_atual}{numero}"
             
             # Determina a classe CSS (cor)
-            status = senhas_status.get(senha, 'default') # Padrão é sem cor
-            css_class = f"{status}-box"
-
-            # Usa a mesma lógica de distribuição em 5 colunas
-            col_index = (i * len(NUMEROS_DISPONIVEIS) + (numero - 1)) % 5
+            status = senhas_status.get(senha, 'default') 
             
-            with cols[col_index]:
-                # O checkbox é criado, e o label é embrulhado com a classe CSS
-                if st.checkbox(f" {senha} ", key=f"chk_{senha}"):
+            # Calcula em qual coluna o checkbox vai
+            col_index = (numero - 1) % NUM_COLUNAS
+            
+            with COLUNAS_LIST[col_index]:
+                # Adiciona a classe CSS diretamente ao container do checkbox
+                st.markdown(f'<div class="{status}-box">', unsafe_allow_html=True)
+                
+                # Criando o checkbox
+                is_checked = st.checkbox(f"{senha}", key=f"chk_{senha}", value=(status == 'yellow'))
+                
+                st.markdown('</div>', unsafe_allow_html=True)
+                
+                if is_checked:
                     # Se o checkbox for marcado:
-                    
                     if status == 'green':
                         # Se já foi chamado (verde), o Atendente clicou para LIMPAR
                         estado_para_limpar = read_shared_state()
-                        # Remove o status de cor e desmarca o checkbox localmente
                         if senha in estado_para_limpar['senhas_status']:
                             del estado_para_limpar['senhas_status'][senha]
                         write_shared_state(estado_para_limpar)
                         
-                        # Limpa o checkbox e recarrega para sumir a cor
+                        # Limpa o checkbox localmente e recarrega para sumir a cor
                         st.session_state[f"chk_{senha}"] = False
                         st.rerun() 
                         
-                    elif status == 'yellow':
-                        # Se já está em processo, apenas aguarda
-                        pass
-                    else:
+                    elif status == 'default':
                         # Se for um status novo ou default, adiciona à lista para chamar
                         senhas_a_chamar.append(senha)
+
+        st.markdown('</div>', unsafe_allow_html=True)
     
     st.markdown("---")
 
     # --- 3. BOTÃO DE CHAMADA FINAL ---
     if senhas_a_chamar:
-        # Pega a primeira senha da lista para chamar
+        # Pega a primeira senha marcada para chamar
         senha_final = senhas_a_chamar[0]
         
         if st.button(f"CHAMAR: {senha_final} no {selected_guiche}", key="btn_chamar_final"):
             chamar_senha(senha_final, selected_guiche)
-            st.rerun() # Recarrega para atualizar a cor para amarelo
+            st.rerun()
     else:
         st.info("Selecione uma senha no menu acima.")
             
