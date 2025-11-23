@@ -2,7 +2,7 @@ import streamlit as st
 
 st.set_page_config(layout="wide", page_title="Sistema de Guichê", initial_sidebar_state="collapsed")
 
-# CSS para esconder a barra lateral na Home Page
+# CSS para esconder a barra lateral e o menu
 st.markdown("""
     <style>
     [data-testid="stSidebar"] {
@@ -18,7 +18,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# --- Inicialização Global do Estado (Necessária para Home.py) ---
+# --- Inicialização Global do Estado ---
 if 'senha_atual' not in st.session_state:
     st.session_state.senha_atual = 0 
 if 'vaga_atual' not in st.session_state:
@@ -26,14 +26,19 @@ if 'vaga_atual' not in st.session_state:
 if 'ultima_chamada_display' not in st.session_state:
     st.session_state.ultima_chamada_display = 'A-0'
 
-# --- Funções de Navegação JavaScript ---
+# --- Funções de Navegação JavaScript Corrigidas ---
 
-def redirect_to_page(page_name):
-    """Injeta JavaScript para redirecionar o navegador."""
-    # O Streamlit nomeia as páginas usando o slug do nome do arquivo (ex: Monitor, Atendente)
+def redirect_to_page(path):
+    """Injeta JavaScript para redirecionar para o caminho da página alvo."""
+    # Obter o caminho base atual (ex: /app-name)
+    base_path = st.get_option('server.baseUrlPath')
+    
+    # Criar a URL completa de destino
+    full_url = f"{base_path}/{path}"
+
     js = f"""
         <script>
-            window.location.href = "{page_name}";
+            window.location.href = "{full_url}";
         </script>
     """
     st.markdown(js, unsafe_allow_html=True)
@@ -49,17 +54,18 @@ col1, col2 = st.columns(2)
 with col1:
     st.markdown('<div class="monitor-box-home" style="background-color: #e0f2ff;"><h3>TELA DO CLIENTE</h3></div>', unsafe_allow_html=True)
     
-    # 🟢 Ação: Chama a função JavaScript (redirect_to_page)
+    # 🟢 Ação: Chama a função JavaScript com o nome do arquivo da página de destino
     if st.button("Sou MONITOR", key="btn_monitor", type="primary"):
-        # O nome do arquivo no Streamlit Cloud é: NomeDaPagina (sem números ou .py)
+        # O Streamlit cria o slug do arquivo pages/1_Monitor.py como Monitor
         redirect_to_page("Monitor") 
 
 with col2:
     st.markdown('<div class="monitor-box-home" style="background-color: #ffe0e0;"><h3>TELA DE CONTROLE</h3></div>', unsafe_allow_html=True)
     
-    # 🟢 Ação: Chama a função JavaScript (redirect_to_page)
+    # 🟢 Ação: Chama a função JavaScript com o nome do arquivo da página de destino
     if st.button("Sou ATENDENTE", key="btn_atendente", type="primary"):
+        # O Streamlit cria o slug do arquivo pages/2_Atendente.py como Atendente
         redirect_to_page("Atendente") 
         
 st.markdown("---")
-st.caption("Acesse a mesma URL em telas diferentes para sincronizar. O sistema agora usa páginas separadas.")
+st.caption("Acesse a mesma URL em telas diferentes para sincronizar. Você só precisa clicar no botão uma vez por tela.")
