@@ -10,17 +10,17 @@ st.set_page_config(layout="wide", page_title="Sistema de Guichê Unificado")
 STATE_FILE = "guiche_state.json" 
 LETRAS_DISPONIVEIS = [chr(i) for i in range(ord('A'), ord('Z') + 1)] 
 NUMEROS_DISPONIVEIS = list(range(1, 31)) # 1 até 30
-GUICHES_DISPONIVEIS = [f"GUICHÊ {i}" for i in range(1, 21)]
+VAGAS_DISPONIVEIS = [f"VAGA {i}" for i in range(1, 21)] # O Atendente seleciona a VAGA
 
 # 🔑 Inicialização de Estado de Controle e Variáveis
 if 'view' not in st.session_state:
     st.session_state.view = 'menu'
     
 if 'letra_selecionada' not in st.session_state:
-    st.session_state.letra_selecionada = 'A' # Novo estado para a letra atual
+    st.session_state.letra_selecionada = 'A' 
 
 
-# --- CSS Único para Todo o App (NOVO: Container Rolável e Ajustes de Botões) ---
+# --- CSS Único para Todo o App ---
 st.markdown("""
     <style>
     /* Estilos Gerais (Mantidos) */
@@ -42,7 +42,7 @@ st.markdown("""
         border-radius: 8px;
         padding: 8px;
         transition: background-color 0.3s;
-        height: 50px; /* Altura fixa para todos */
+        height: 50px; 
         display: flex;
         justify-content: center;
         align-items: center;
@@ -72,8 +72,7 @@ st.markdown("""
         align-items: center;
     }
 
-    /* === NOVO CONTAINER ROLÁVEL === */
-    /* Aplica rolagem e altura máxima ao container onde estão as senhas */
+    /* === CONTAINER ROLÁVEL === */
     .stContainerWithScroll {
         overflow-y: scroll;
         max-height: 400px; /* Altura máxima para o container */
@@ -93,7 +92,7 @@ def read_shared_state():
     """Lê o estado compartilhado do arquivo JSON."""
     default_state = {
         'senha_display': 'A-0',
-        'vaga': 'GAIOLA ---',
+        'vaga': 'VAGA ---',
         'history': [],
         'senhas_status': {} 
     }
@@ -105,6 +104,9 @@ def read_shared_state():
             state = json.load(f)
             if 'senhas_status' not in state:
                 state['senhas_status'] = {}
+            # Garantir o rótulo VAGA inicial, caso o arquivo esteja vazio
+            if 'vaga' not in state:
+                state['vaga'] = 'VAGA ---'
             return state
         except:
             return default_state
@@ -116,9 +118,10 @@ def write_shared_state(state):
 
 # --- Funções de Lógica ---
 def chamar_senha(senha_completa, vaga_selecionada):
-    """Atualiza o estado compartilhado com a senha, vaga e gerencia o histórico e cores."""
+    """Atualiza o estado compartilhado com a senha (GAIOLA) e vaga (VAGA), e gerencia o histórico e cores."""
     
-    vaga_display = vaga_selecionada.replace("GUICHÊ", "GAIOLA")
+    # A VAGA selecionada pelo Atendente já está formatada como VAGA X
+    vaga_display = vaga_selecionada
     
     estado_atual = read_shared_state()
     history = estado_atual['history']
@@ -133,6 +136,7 @@ def chamar_senha(senha_completa, vaga_selecionada):
     senhas_status[senha_completa] = 'yellow'
     
     # 3. ATUALIZA HISTÓRICO
+    # O histórico armazena [SENHA, VAGA]
     novo_item_historico = [senha_completa, vaga_display]
     if not history or history[0] != novo_item_historico:
         history.insert(0, novo_item_historico)
@@ -141,17 +145,17 @@ def chamar_senha(senha_completa, vaga_selecionada):
     # 4. ESCREVE O NOVO ESTADO
     novo_estado = {
         'senha_display': senha_completa,
-        'vaga': vaga_display,
+        'vaga': vaga_display, # A VAGA é o local
         'history': history,
         'senhas_status': senhas_status
     }
     write_shared_state(novo_estado)
     
-    st.toast(f"🔔 Chamando: {senha_completa} no {vaga_selecionada}", icon="✅") 
+    st.toast(f"🔔 Chamando: {senha_completa} na {vaga_selecionada}", icon="✅") 
 
 
 # ==========================================================
-## 1. Módulo Monitor (Visão do Cliente)
+## 1. Módulo Monitor (Visão do Cliente - TERMINOLOGIA CORRIGIDA)
 # ==========================================================
 def view_monitor():
     estado_compartilhado = read_shared_state()
@@ -164,9 +168,11 @@ def view_monitor():
     with col_chamada_atual:
         st.subheader("CHAMADA ATUAL")
         
-        st.markdown('<div class="monitor-box-page" style="background-color: #ffe0e0; padding: 20px;"><h3>SENHA</h3></div>', unsafe_allow_html=True)
+        # O rótulo é GAIOLA (a senha)
+        st.markdown('<div class="monitor-box-page" style="background-color: #ffe0e0; padding: 20px;"><h3>GAIOLA</h3></div>', unsafe_allow_html=True) 
         st.markdown(f'<p class="big-font-senha">{estado_compartilhado["senha_display"]}</p>', unsafe_allow_html=True)
 
+        # O rótulo é VAGA (o local)
         st.markdown('<div class="monitor-box-page" style="background-color: #e0f2ff; padding: 20px;"><h3>DIRIJA-SE À</h3></div>', unsafe_allow_html=True)
         st.markdown(f'<p class="big-font-vaga">{estado_compartilhado["vaga"]}</p>', unsafe_allow_html=True)
 
@@ -182,8 +188,8 @@ def view_monitor():
             data_for_display = []
             for item in history_for_display:
                 data_for_display.append({
-                    "Senha": item[0],
-                    "Gaiola": item[1]
+                    "GAIOLA": item[0], # Senha é GAIOLA
+                    "VAGA": item[1]    # Local é VAGA
                 })
                 
             st.dataframe(
@@ -191,8 +197,8 @@ def view_monitor():
                 use_container_width=True, 
                 hide_index=True,
                 column_config={
-                    "Senha": st.column_config.TextColumn(width="small"),
-                    "Gaiola": st.column_config.TextColumn(width="small")
+                    "GAIOLA": st.column_config.TextColumn(width="small"),
+                    "VAGA": st.column_config.TextColumn(width="small")
                 }
             )
         else:
@@ -210,24 +216,23 @@ def view_atendente():
     
     st.title("Sistema de Chamada de Guichê")
 
+    # A Última Chamada mostra a GAIOLA na VAGA
     st.subheader(f"Última Chamada: **{estado_atual['senha_display']}** na **{estado_atual['vaga']}**")
     st.markdown("---")
     
-    # --- 1. SELEÇÃO DE VAGA (GUICHÊ) ---
-    col_guiche, col_letra_select = st.columns([3, 1])
+    # --- 1. SELEÇÃO DE VAGA E LETRA ---
+    col_vaga_select, col_letra_select = st.columns([3, 1])
 
-    with col_guiche:
-        st.subheader("1. Selecione o Guichê de Atendimento")
-        selected_guiche = st.selectbox(
-            "Guichê de Destino:",
-            GUICHES_DISPONIVEIS,
-            key="select_guiche"
+    with col_vaga_select:
+        st.subheader("1. Selecione a Vaga de Atendimento")
+        selected_vaga = st.selectbox(
+            "Vaga de Destino:",
+            VAGAS_DISPONIVEIS,
+            key="select_vaga"
         )
     
-    # --- SELETOR DE LETRA ---
     with col_letra_select:
         st.subheader("Letra")
-        # Armazena a letra selecionada no estado da sessão
         st.session_state.letra_selecionada = st.selectbox(
             "Filtrar por Letra:",
             LETRAS_DISPONIVEIS,
@@ -239,51 +244,41 @@ def view_atendente():
     st.markdown("---")
     
     # --- 2. SELEÇÃO DE SENHAS (GRID ROLÁVEL) ---
-    st.subheader(f"2. Senhas da Letra **{letra_atual}** (Selecione para Chamar)")
+    st.subheader(f"2. Senhas da GAIOLA {letra_atual} (Selecione para Chamar)")
     
-    # NOVO: Container rolável para minimizar espaço
     with st.container():
         st.markdown('<div class="stContainerWithScroll">', unsafe_allow_html=True)
         
-        # Cria 4 colunas para a grade (30/4 = 7.5, vamos usar 8 linhas completas)
         NUM_COLUNAS = 4
         COLUNAS_LIST = st.columns(NUM_COLUNAS)
         
         senhas_a_chamar = []
         
-        for numero in NUMEROS_DISPONIVEIS: # 1 a 30
+        for numero in NUMEROS_DISPONIVEIS:
             senha = f"{letra_atual}{numero}"
             
-            # Determina a classe CSS (cor)
             status = senhas_status.get(senha, 'default') 
             
-            # Calcula em qual coluna o checkbox vai
             col_index = (numero - 1) % NUM_COLUNAS
             
             with COLUNAS_LIST[col_index]:
-                # Adiciona a classe CSS diretamente ao container do checkbox
                 st.markdown(f'<div class="{status}-box">', unsafe_allow_html=True)
                 
-                # Criando o checkbox
                 is_checked = st.checkbox(f"{senha}", key=f"chk_{senha}", value=(status == 'yellow'))
                 
                 st.markdown('</div>', unsafe_allow_html=True)
                 
                 if is_checked:
-                    # Se o checkbox for marcado:
                     if status == 'green':
-                        # Se já foi chamado (verde), o Atendente clicou para LIMPAR
                         estado_para_limpar = read_shared_state()
                         if senha in estado_para_limpar['senhas_status']:
                             del estado_para_limpar['senhas_status'][senha]
                         write_shared_state(estado_para_limpar)
                         
-                        # Limpa o checkbox localmente e recarrega para sumir a cor
                         st.session_state[f"chk_{senha}"] = False
                         st.rerun() 
                         
                     elif status == 'default':
-                        # Se for um status novo ou default, adiciona à lista para chamar
                         senhas_a_chamar.append(senha)
 
         st.markdown('</div>', unsafe_allow_html=True)
@@ -292,14 +287,13 @@ def view_atendente():
 
     # --- 3. BOTÃO DE CHAMADA FINAL ---
     if senhas_a_chamar:
-        # Pega a primeira senha marcada para chamar
         senha_final = senhas_a_chamar[0]
         
-        if st.button(f"CHAMAR: {senha_final} no {selected_guiche}", key="btn_chamar_final"):
-            chamar_senha(senha_final, selected_guiche)
+        if st.button(f"CHAMAR GAIOLA: {senha_final} para {selected_vaga}", key="btn_chamar_final"):
+            chamar_senha(senha_final, selected_vaga)
             st.rerun()
     else:
-        st.info("Selecione uma senha no menu acima.")
+        st.info("Selecione uma GAIOLA no menu acima.")
             
     st.markdown("---")
     if st.button("Voltar ao Menu", key="back_menu"):
