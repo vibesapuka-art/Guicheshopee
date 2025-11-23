@@ -42,7 +42,14 @@ st.markdown("""
     }
     /* CSS para Atendente */
     .stButton>button {
-        width: 100%; height: 100px; font-size: 24px; background-color: #2ecc71; color: white; border-radius: 10px; margin: 10px 0;
+        width: 100%; height: 100px; font-size: 24px; background-color: #2ecc71; /* Verde */ color: white; border-radius: 10px; margin: 10px 0;
+    }
+    /* Esconde barra lateral e menu (se não estiver em modo Monitor) */
+    [data-testid="stSidebar"] {
+        display: none;
+    }
+    .css-vk3250 {
+        visibility: hidden;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -79,7 +86,7 @@ def view_monitor():
 
     # Força a atualização da página a cada 1 segundo (Polling)
     time.sleep(1) 
-    st.experimental_rerun()
+    st.rerun() # 🟢 CORRIGIDO: Substitui st.experimental_rerun()
 
 # ==========================================================
 ## 2. Módulo Atendente (Controle)
@@ -100,12 +107,12 @@ def view_atendente():
         with cols[i]:
             if st.button(f"Guichê {vaga}", key=f"btn_{vaga}"):
                 chamar_senha(vaga)
-                st.experimental_rerun() # Necessário para atualizar o display de info
+                st.rerun() # 🟢 CORRIGIDO: Substitui st.experimental_rerun()
             
     st.markdown("---")
     if st.button("Voltar ao Menu", key="back_menu"):
         st.session_state.view = 'menu'
-        st.experimental_rerun()
+        st.rerun() # 🟢 CORRIGIDO: Substitui st.experimental_rerun()
 
 # ==========================================================
 ## 3. Módulo Menu (Inicial)
@@ -121,13 +128,13 @@ def view_menu():
         st.markdown('<div class="menu-box" style="background-color: #e0f2ff;"><h3>TELA DO CLIENTE</h3></div>', unsafe_allow_html=True)
         if st.button("Sou MONITOR", key="btn_monitor", type="primary"):
             st.session_state.view = 'monitor'
-            st.experimental_rerun() 
+            st.rerun() # 🟢 CORRIGIDO: Substitui st.experimental_rerun()
 
     with col2:
         st.markdown('<div class="menu-box" style="background-color: #ffe0e0;"><h3>TELA DE CONTROLE</h3></div>', unsafe_allow_html=True)
         if st.button("Sou ATENDENTE", key="btn_atendente", type="primary"):
             st.session_state.view = 'atendente'
-            st.experimental_rerun() 
+            st.rerun() # 🟢 CORRIGIDO: Substitui st.experimental_rerun()
 
     st.markdown("---")
     st.caption("Acesse a mesma URL em telas diferentes e selecione os modos.")
@@ -136,7 +143,6 @@ def view_menu():
 ## 4. Roteador Principal (Execução)
 # ==========================================================
 
-# O Streamlit executa o código do topo para baixo. 
 # O roteador decide qual função chamar com base no estado.
 
 if st.session_state.view == 'monitor':
