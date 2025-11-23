@@ -1,22 +1,20 @@
 import streamlit as st
 import time
-import os # Necessário para manipular o arquivo de estado
+import os
 
-# --- Configurações e Inicialização Global ---
+# --- Configurações e Variáveis ---
 st.set_page_config(layout="wide", page_title="Sistema de Guichê Unificado")
 
 # --- Variáveis de Lógica ---
-PREFIXO = 'A'
-GUICHES_DISPONIVEIS = [10, 20, 30, 40]
-
-# Nome do arquivo de estado (será criado na pasta do aplicativo)
 STATE_FILE = "guiche_state.txt" 
+LETRAS_DISPONIVEIS = [chr(i) for i in range(ord('A'), ord('Z') + 1)] # A até Z
+NUMEROS_DISPONIVEIS = list(range(1, 31)) # 1 até 30
+VAGAS_DISPONIVEIS = [f"VAGA {i}" for i in range(1, 21)] # Vaga 1 até Vaga 20
 
-# 🔑 Variável de Controle de Visualização
+# 🔑 Inicialização de Estado de Controle e Variáveis
 if 'view' not in st.session_state:
     st.session_state.view = 'menu'
     
-# --- Inicialização de Estado Local (para evitar erros, mas não é usado para sincronia) ---
 if 'senha_atual' not in st.session_state:
     st.session_state.senha_atual = 0 
 if 'vaga_atual' not in st.session_state:
@@ -24,7 +22,7 @@ if 'vaga_atual' not in st.session_state:
 if 'ultima_chamada_display' not in st.session_state:
     st.session_state.ultima_chamada_display = 'A-0'
 
-# --- CSS Único para Todo o App (Mantido) ---
+# --- CSS Único para Todo o App ---
 st.markdown("""
     <style>
     /* CSS para o Menu Inicial */
@@ -45,7 +43,7 @@ st.markdown("""
     }
     /* CSS para Atendente */
     .stButton>button {
-        width: 100%; height: 100px; font-size: 24px; background-color: #2ecc71; /* Verde */ color: white; border-radius: 10px; margin: 10px 0;
+        width: 100%; height: 100px; font-size: 24px; background-color: #2ecc71; color: white; border-radius: 10px; margin: 10px 0;
     }
     /* Esconde barra lateral e menu */
     [data-testid="stSidebar"] {
@@ -58,55 +56,47 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ==========================================================
-## NOVAS FUNÇÕES DE ESTADO COMPARTILHADO
+## Funções de Estado Compartilhado (Sincronia entre Monitores e Atendentes)
 # ==========================================================
 
 def read_shared_state():
     """Lê o estado compartilhado do arquivo de texto."""
     if not os.path.exists(STATE_FILE):
-        return {'senha_display': 'A-0', 'vaga': '---', 'senha_num': 0}
+        # Retorna o estado inicial se o arquivo não existir
+        return {'senha_display': 'A-0', 'vaga': '---', 'senha_num': 0} 
         
     with open(STATE_FILE, "r") as f:
         try:
             lines = f.readlines()
-            # O arquivo armazena: ultima_chamada_display, vaga_atual, senha_atual
+            # O arquivo armazena: ultima_chamada_display, vaga_atual, senha_atual (senha_num)
             senha_display = lines[0].strip()
             vaga = lines[1].strip()
-            senha_num = int(lines[2].strip())
+            # Mantemos senha_num para compatibilidade, mas agora será sempre 0
+            senha_num = int(lines[2].strip()) 
             return {'senha_display': senha_display, 'vaga': vaga, 'senha_num': senha_num}
         except:
-            # Em caso de arquivo corrompido, retorna o estado inicial
             return {'senha_display': 'A-0', 'vaga': '---', 'senha_num': 0}
 
 def write_shared_state(senha_display, vaga, senha_num):
     """Escreve o estado compartilhado no arquivo de texto."""
     with open(STATE_FILE, "w") as f:
-        # Escreve o estado em três linhas separadas
         f.write(f"{senha_display}\n")
         f.write(f"{vaga}\n")
         f.write(f"{senha_num}\n")
 
 # --- Funções de Lógica ---
+def chamar_senha(senha_completa, vaga_chamada):
+    """Atualiza o estado compartilhado com a senha e vaga selecionadas."""
+    
+    # Atualiza o estado da sessão local (para o Atendente)
+    st.session_state.vaga_atual = vaga_chamada
+    st.session_state.ultima_chamada_display = senha_completa
+    
+    # ESCREVE o novo estado no arquivo compartilhado (senha_num é 0, pois a contagem é manual)
+    write_shared_state(senha_completa, st.session_state.vaga_atual, 0)
+    
+    st.toast(f"🔔 Chamando: {senha_completa} na {vaga_chamada}", icon="✅")
 
-def formatar_senha(numero):
-    return f"{PREFIXO}-{numero}"
-
-def chamar_senha(vaga_chamada):
-    # 1. Lê o último estado para saber qual é a próxima senha
-    estado_anterior = read_shared_state()
-    proxima_senha_num = estado_anterior['senha_num'] + 1
-    
-    nova_senha_formatada = formatar_senha(proxima_senha_num)
-    
-    # 2. Atualiza o estado da sessão local (para o Atendente)
-    st.session_state.senha_atual = proxima_senha_num
-    st.session_state.vaga_atual = str(vaga_chamada)
-    st.session_state.ultima_chamada_display = nova_senha_formatada
-    
-    # 3. ESCREVE o novo estado no arquivo compartilhado
-    write_shared_state(nova_senha_formatada, st.session_state.vaga_atual, proxima_senha_num)
-    
-    st.toast(f"🔔 Chamando: {nova_senha_formatada} na VAGA {vaga_chamada}", icon="✅")
 
 # ==========================================================
 ## 1. Módulo Monitor (Visão do Cliente)
@@ -115,7 +105,6 @@ def view_monitor():
     # 1. LÊ o estado mais atual do arquivo compartilhado
     estado_compartilhado = read_shared_state()
     
-    # 2. Atualiza o display do Monitor com o estado lido
     st.markdown("<h1>🔔 Painel de Chamada ao Cliente</h1>", unsafe_allow_html=True)
 
     col_senha, col_vaga = st.columns(2)
@@ -125,7 +114,7 @@ def view_monitor():
         st.markdown(f'<p class="big-font-senha">{estado_compartilhado["senha_display"]}</p>', unsafe_allow_html=True)
 
     with col_vaga:
-        st.markdown('<div class="monitor-box-page" style="background-color: #e0f2ff;"><h3>DIRIJA-SE AO GUICHÊ</h3></div>', unsafe_allow_html=True)
+        st.markdown('<div class="monitor-box-page" style="background-color: #e0f2ff;"><h3>DIRIJA-SE AO LOCAL</h3></div>', unsafe_allow_html=True)
         st.markdown(f'<p class="big-font-vaga">{estado_compartilhado["vaga"]}</p>', unsafe_allow_html=True)
 
     # Força a atualização da página a cada 1 segundo (Polling)
@@ -133,39 +122,67 @@ def view_monitor():
     st.rerun() 
 
 # ==========================================================
-## 2. Módulo Atendente (Controle)
+## 2. Módulo Atendente (Controle - Seleção Manual)
 # ==========================================================
 def view_atendente():
     # 1. Lê o estado atual (local ou compartilhado)
     estado_atual = read_shared_state()
     
-    # 2. Define o display local com base no estado compartilhado
-    st.session_state.senha_atual = estado_atual['senha_num']
-    st.session_state.ultima_chamada_display = estado_atual['senha_display']
-    st.session_state.vaga_atual = estado_atual['vaga']
-
     st.title("Sistema de Chamada de Guichê")
 
-    # Garante que a próxima senha exibida é baseada no estado compartilhado
-    st.info(f"Próxima Senha a Chamar: **{formatar_senha(estado_atual['senha_num'] + 1)}**")
-    st.subheader(f"Última Chamada: **{estado_atual['senha_display']}** na Vaga **{estado_atual['vaga']}**")
-
+    # Display da Última Chamada
+    st.subheader(f"Última Chamada: **{estado_atual['senha_display']}** na **{estado_atual['vaga']}**")
     st.markdown("---")
 
-    st.subheader("Clique no seu Guichê para Chamar a Próxima Senha")
+    
+    # --- SELETORES DE SENHA (LETRA + NÚMERO) ---
+    st.subheader("1. Selecione a Senha para Chamada")
+    col_letra, col_numero = st.columns(2)
+    
+    with col_letra:
+        # Seletor de Letra
+        selected_letra = st.selectbox(
+            "Selecione a Letra:",
+            LETRAS_DISPONIVEIS,
+            key="select_letra"
+        )
 
-    cols = st.columns(len(GUICHES_DISPONIVEIS))
+    with col_numero:
+        # Seletor de Número
+        selected_numero = st.selectbox(
+            "Selecione o Número:",
+            NUMEROS_DISPONIVEIS,
+            key="select_numero"
+        )
+        
+    senha_a_chamar = f"{selected_letra}{selected_numero}"
+    st.metric(label="SENHA PRONTA", value=senha_a_chamar)
+    
+    st.markdown("---")
 
-    for i, vaga in enumerate(GUICHES_DISPONIVEIS):
-        with cols[i]:
-            if st.button(f"Guichê {vaga}", key=f"btn_{vaga}"):
-                chamar_senha(vaga)
-                st.rerun() 
+    # --- SELETOR DE VAGA (GUICHÊ) ---
+    st.subheader("2. Selecione a Vaga (Guichê)")
+    
+    # Seletor de Vaga
+    selected_vaga = st.selectbox(
+        "Vaga de Destino:",
+        VAGAS_DISPONIVEIS,
+        key="select_vaga"
+    )
+
+    st.markdown("---")
+    
+    # --- BOTÃO DE CHAMADA FINAL ---
+    st.subheader("3. Confirmar Chamada")
+    if st.button(f"CHAMAR {senha_a_chamar} para {selected_vaga}", key="btn_chamar"):
+        # Chama a função principal com as seleções
+        chamar_senha(senha_a_chamar, selected_vaga)
+        st.rerun() 
             
     st.markdown("---")
     if st.button("Voltar ao Menu", key="back_menu"):
         st.session_state.view = 'menu'
-        st.rerun() 
+        st.rerun()
 
 # ==========================================================
 ## 3. Módulo Menu (Inicial)
