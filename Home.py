@@ -2,22 +2,6 @@ import streamlit as st
 
 st.set_page_config(layout="wide", page_title="Sistema de Guichê", initial_sidebar_state="collapsed")
 
-# CSS para esconder a barra lateral e o menu
-st.markdown("""
-    <style>
-    [data-testid="stSidebar"] {
-        display: none;
-    }
-    .css-vk3250 {
-        visibility: hidden;
-    }
-    .monitor-box-home {
-        padding: 40px; margin: 20px 0; border-radius: 20px; box-shadow: 0 8px 16px rgba(0,0,0,0.1);
-        text-align: center; height: 250px; display: flex; flex-direction: column; justify-content: center;
-    }
-    </style>
-""", unsafe_allow_html=True)
-
 # --- Inicialização Global do Estado ---
 if 'senha_atual' not in st.session_state:
     st.session_state.senha_atual = 0 
@@ -26,46 +10,26 @@ if 'vaga_atual' not in st.session_state:
 if 'ultima_chamada_display' not in st.session_state:
     st.session_state.ultima_chamada_display = 'A-0'
 
-# --- Funções de Navegação JavaScript Corrigidas ---
-
-def redirect_to_page(path):
-    """Injeta JavaScript para redirecionar para o caminho da página alvo."""
-    # Obter o caminho base atual (ex: /app-name)
-    base_path = st.get_option('server.baseUrlPath')
-    
-    # Criar a URL completa de destino
-    full_url = f"{base_path}/{path}"
-
-    js = f"""
-        <script>
-            window.location.href = "{full_url}";
-        </script>
-    """
-    st.markdown(js, unsafe_allow_html=True)
-
-
-# --- Layout da Home Page ---
-st.title("Sistema de Guichê: Escolha seu Modo")
+st.title("Sistema de Chamada de Guichê 🚀")
 st.markdown("---")
-st.header("Qual é a sua função nesta tela?")
 
-col1, col2 = st.columns(2)
+st.header("Instruções de Acesso Direto")
+st.info("Devido a restrições de segurança do ambiente, a navegação deve ser feita por URL.")
 
-with col1:
-    st.markdown('<div class="monitor-box-home" style="background-color: #e0f2ff;"><h3>TELA DO CLIENTE</h3></div>', unsafe_allow_html=True)
-    
-    # 🟢 Ação: Chama a função JavaScript com o nome do arquivo da página de destino
-    if st.button("Sou MONITOR", key="btn_monitor", type="primary"):
-        # O Streamlit cria o slug do arquivo pages/1_Monitor.py como Monitor
-        redirect_to_page("Monitor") 
+base_url = st.get_option('server.baseUrlPath') # Obtém a URL base (ex: /guicheshopee)
 
-with col2:
-    st.markdown('<div class="monitor-box-home" style="background-color: #ffe0e0;"><h3>TELA DE CONTROLE</h3></div>', unsafe_allow_html=True)
-    
-    # 🟢 Ação: Chama a função JavaScript com o nome do arquivo da página de destino
-    if st.button("Sou ATENDENTE", key="btn_atendente", type="primary"):
-        # O Streamlit cria o slug do arquivo pages/2_Atendente.py como Atendente
-        redirect_to_page("Atendente") 
-        
+st.markdown(f"""
+### 🎛️ Para o Atendente (Controle)
+**Use esta URL:** `https://play.google.com/store/apps/details?id=com.flaviodesign.doit&hl=pt/Atendente`
+<a href="{base_url}/Atendente" target="_self"><button style="background-color: #2ecc71; color: white; padding: 10px 20px; border-radius: 5px; border: none; font-size: 16px; cursor: pointer;">CLIQUE PARA ABRIR O ATENDENTE</button></a>
+""", unsafe_allow_html=True)
+
 st.markdown("---")
-st.caption("Acesse a mesma URL em telas diferentes para sincronizar. Você só precisa clicar no botão uma vez por tela.")
+
+st.markdown(f"""
+### 🖥️ Para o Monitor (Tela Pública)
+**Use esta URL:** `https://play.google.com/store/apps/details?id=com.flaviodesign.doit&hl=pt/Monitor`
+<a href="{base_url}/Monitor" target="_blank"><button style="background-color: #3498db; color: white; padding: 10px 20px; border-radius: 5px; border: none; font-size: 16px; cursor: pointer;">CLIQUE PARA ABRIR O MONITOR</button></a>
+""", unsafe_allow_html=True)
+
+st.caption("Abra a URL do Monitor em uma tela separada para o público.")
