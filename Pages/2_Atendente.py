@@ -3,12 +3,11 @@ import streamlit as st
 # --- Configuração ---
 st.set_page_config(layout="wide", page_title="Controle de Chamada")
 
-# Variáveis de Configuração (Mantenha aqui)
+# Variáveis de Configuração
 PREFIXO = 'A'
 GUICHES_DISPONIVEIS = [10, 20, 30, 40]
 
-# --- 1. Inicialização do Estado ---
-# Se o estado não existe, inicializa (o Streamlit gerencia a sincronia entre páginas)
+# --- Inicialização de Estado de Segurança ---
 if 'senha_atual' not in st.session_state:
     st.session_state.senha_atual = 0 
 if 'vaga_atual' not in st.session_state:
@@ -18,9 +17,11 @@ if 'ultima_chamada_display' not in st.session_state:
 
 # --- Funções de Lógica ---
 def formatar_senha(numero):
+    """Formata o número da senha para o padrão A-X."""
     return f"{PREFIXO}-{numero}"
 
 def chamar_senha(vaga_chamada):
+    """Incrementa a senha e atualiza o estado da sessão."""
     st.session_state.senha_atual += 1
     nova_senha_formatada = formatar_senha(st.session_state.senha_atual)
     
@@ -29,7 +30,7 @@ def chamar_senha(vaga_chamada):
     
     st.toast(f"🔔 Chamando: {nova_senha_formatada} na VAGA {vaga_chamada}", icon="✅")
 
-# --- CSS (Mantenha o CSS da versão anterior aqui) ---
+# --- CSS para Botões ---
 st.markdown("""
     <style>
     .stButton>button {
@@ -65,4 +66,4 @@ for i, vaga in enumerate(GUICHES_DISPONIVEIS):
             chamar_senha(vaga)
             
 st.markdown("---")
-st.markdown("A **Barra Lateral** à esquerda permite alternar entre as páginas. Mantenha a página do Monitor aberta em outra tela.")
+st.caption("Mantenha a página do Monitor aberta em uma tela separada para o público visualizar a chamada.")
