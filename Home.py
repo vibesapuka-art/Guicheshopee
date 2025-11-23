@@ -104,7 +104,6 @@ def read_shared_state():
             state = json.load(f)
             if 'senhas_status' not in state:
                 state['senhas_status'] = {}
-            # Garantir o rótulo VAGA inicial, caso o arquivo esteja vazio
             if 'vaga' not in state:
                 state['vaga'] = 'VAGA ---'
             return state
@@ -120,7 +119,7 @@ def write_shared_state(state):
 def chamar_senha(senha_completa, vaga_selecionada):
     """Atualiza o estado compartilhado com a senha (GAIOLA) e vaga (VAGA), e gerencia o histórico e cores."""
     
-    # A VAGA selecionada pelo Atendente já está formatada como VAGA X
+    # A VAGA selecionada pelo Atendente é o local de destino
     vaga_display = vaga_selecionada
     
     estado_atual = read_shared_state()
@@ -136,7 +135,7 @@ def chamar_senha(senha_completa, vaga_selecionada):
     senhas_status[senha_completa] = 'yellow'
     
     # 3. ATUALIZA HISTÓRICO
-    # O histórico armazena [SENHA, VAGA]
+    # O histórico armazena [SENHA (GAIOLA), VAGA]
     novo_item_historico = [senha_completa, vaga_display]
     if not history or history[0] != novo_item_historico:
         history.insert(0, novo_item_historico)
@@ -144,18 +143,18 @@ def chamar_senha(senha_completa, vaga_selecionada):
     
     # 4. ESCREVE O NOVO ESTADO
     novo_estado = {
-        'senha_display': senha_completa,
-        'vaga': vaga_display, # A VAGA é o local
+        'senha_display': senha_completa, # GAIOLA
+        'vaga': vaga_display,          # VAGA
         'history': history,
         'senhas_status': senhas_status
     }
     write_shared_state(novo_estado)
     
-    st.toast(f"🔔 Chamando: {senha_completa} na {vaga_selecionada}", icon="✅") 
+    st.toast(f"🔔 Chamando GAIOLA {senha_completa} para {vaga_selecionada}", icon="✅") 
 
 
 # ==========================================================
-## 1. Módulo Monitor (Visão do Cliente - TERMINOLOGIA CORRIGIDA)
+## 1. Módulo Monitor (Visão do Cliente - AJUSTE FINAL)
 # ==========================================================
 def view_monitor():
     estado_compartilhado = read_shared_state()
@@ -172,8 +171,8 @@ def view_monitor():
         st.markdown('<div class="monitor-box-page" style="background-color: #ffe0e0; padding: 20px;"><h3>GAIOLA</h3></div>', unsafe_allow_html=True) 
         st.markdown(f'<p class="big-font-senha">{estado_compartilhado["senha_display"]}</p>', unsafe_allow_html=True)
 
-        # O rótulo é VAGA (o local)
-        st.markdown('<div class="monitor-box-page" style="background-color: #e0f2ff; padding: 20px;"><h3>DIRIJA-SE À</h3></div>', unsafe_allow_html=True)
+        # O rótulo é VAGA (o local) - AJUSTADO AQUI: Removido "DIRIJA-SE À"
+        st.markdown('<div class="monitor-box-page" style="background-color: #e0f2ff; padding: 20px;"><h3>VAGA</h3></div>', unsafe_allow_html=True)
         st.markdown(f'<p class="big-font-vaga">{estado_compartilhado["vaga"]}</p>', unsafe_allow_html=True)
 
     # --- COLUNA MENOR: HISTÓRICO DAS ÚLTIMAS 10 ---
@@ -264,12 +263,14 @@ def view_atendente():
             with COLUNAS_LIST[col_index]:
                 st.markdown(f'<div class="{status}-box">', unsafe_allow_html=True)
                 
+                # O valor inicial do checkbox é TRUE apenas se o status for 'yellow' (em chamada)
                 is_checked = st.checkbox(f"{senha}", key=f"chk_{senha}", value=(status == 'yellow'))
                 
                 st.markdown('</div>', unsafe_allow_html=True)
                 
                 if is_checked:
                     if status == 'green':
+                        # Se já foi chamado (verde), o Atendente clicou para LIMPAR
                         estado_para_limpar = read_shared_state()
                         if senha in estado_para_limpar['senhas_status']:
                             del estado_para_limpar['senhas_status'][senha]
@@ -279,6 +280,7 @@ def view_atendente():
                         st.rerun() 
                         
                     elif status == 'default':
+                        # Se for um status novo ou default, adiciona à lista para chamar
                         senhas_a_chamar.append(senha)
 
         st.markdown('</div>', unsafe_allow_html=True)
