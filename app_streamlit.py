@@ -62,7 +62,7 @@ st.markdown("""
         flex-direction: column;
         justify-content: center;
     }
-    /* Estilos para a Tela do Atendente e Home */
+    /* Estilos para a Tela do Atendente */
     .stButton>button {
         width: 100%;
         height: 100px;
@@ -71,14 +71,6 @@ st.markdown("""
         margin: 10px 0;
         transition: background-color 0.3s;
     }
-    /* Estilo específico para o botão de Escolha */
-    .choice-button {
-        background-color: #2ecc71; /* Verde */
-        color: white;
-    }
-    .choice-button:hover {
-        background-color: #27ae60;
-    }
     </style>
 """, unsafe_allow_html=True)
 
@@ -86,6 +78,9 @@ st.markdown("""
 
 query_params = st.query_params
 view_mode = query_params.get('view', [None])[0]
+
+# O Streamlit Cloud/Servidor fornece a URL base
+base_url = st.get_option('server.baseUrlPath')
 
 if view_mode == 'monitor':
     
@@ -105,7 +100,7 @@ if view_mode == 'monitor':
         st.markdown('<div class="monitor-box" style="background-color: #e0f2ff;"><h3>DIRIJA-SE AO GUICHÊ</h3></div>', unsafe_allow_html=True)
         st.markdown(f'<p class="big-font-vaga">{st.session_state.vaga_atual}</p>', unsafe_allow_html=True)
 
-    # Força a atualização da página a cada 1 segundo
+    # Força a atualização da página a cada 1 segundo (Polling)
     time.sleep(1) 
     st.experimental_rerun() 
 
@@ -117,7 +112,6 @@ elif view_mode == 'atendente':
     
     st.title("Sistema de Chamada de Guichê")
     
-    # Exibe o estado atual no topo da tela do atendente
     st.info(f"Próxima Senha a Chamar: **{formatar_senha(st.session_state.senha_atual + 1)}**")
     st.subheader(f"Última Chamada: **{st.session_state.ultima_chamada_display}** na Vaga **{st.session_state.vaga_atual}**")
     
@@ -127,7 +121,6 @@ elif view_mode == 'atendente':
 
     cols = st.columns(len(GUICHES_DISPONIVEIS))
 
-    # Cria um botão para cada guichê
     for i, vaga in enumerate(GUICHES_DISPONIVEIS):
         with cols[i]:
             if st.button(f"Guichê {vaga}", key=f"btn_{vaga}"):
@@ -136,7 +129,11 @@ elif view_mode == 'atendente':
     st.markdown("---")
     
     # Link de acesso rápido ao Monitor para referência
-    st.markdown("Acesse o **Monitor** em outra tela (TV/Projetor) para que os clientes vejam a chamada.")
+    st.markdown(f"""
+    ### 🔗 Link para o Monitor
+    Abra esta URL em sua TV/Monitor (Tela Pública):
+    **<a href="{base_url}?view=monitor" target="_blank">{base_url}?view=monitor</a>**
+    """, unsafe_allow_html=True)
     
 else:
     # ==========================================================
@@ -152,17 +149,13 @@ else:
 
     with col1:
         st.markdown('<div class="monitor-box" style="background-color: #e0f2ff;"><h3>TELA DO CLIENTE</h3></div>', unsafe_allow_html=True)
-        # Ao clicar, define o parâmetro 'view' como 'monitor' e recarrega a página
-        if st.button("Sou MONITOR (Tela Pública)", key="btn_monitor"):
-            st.experimental_set_query_params(view="monitor")
-            st.experimental_rerun()
+        # Link HTML para redirecionar para a visualização do Monitor
+        st.markdown(f'<a href="{base_url}?view=monitor" target="_self"><button style="width: 100%; height: 100px; font-size: 24px; background-color: #3498db; color: white; border: none; border-radius: 10px; cursor: pointer;">Sou MONITOR (Tela Pública)</button></a>', unsafe_allow_html=True)
 
     with col2:
         st.markdown('<div class="monitor-box" style="background-color: #ffe0e0;"><h3>TELA DE CONTROLE</h3></div>', unsafe_allow_html=True)
-        # Ao clicar, define o parâmetro 'view' como 'atendente' e recarrega a página
-        if st.button("Sou ATENDENTE (Controle)", key="btn_atendente"):
-            st.experimental_set_query_params(view="atendente")
-            st.experimental_rerun()
+        # Link HTML para redirecionar para a visualização do Atendente
+        st.markdown(f'<a href="{base_url}?view=atendente" target="_self"><button style="width: 100%; height: 100px; font-size: 24px; background-color: #2ecc71; color: white; border: none; border-radius: 10px; cursor: pointer;">Sou ATENDENTE (Controle)</button></a>', unsafe_allow_html=True)
             
     st.markdown("---")
-    st.caption("Acesse a mesma URL em telas diferentes para sincronizar o sistema.")
+    st.caption("Acesse a mesma URL em telas diferentes e clique na função desejada para sincronizar.")
