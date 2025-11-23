@@ -1,38 +1,19 @@
 import streamlit as st
+import time
 
-st.set_page_config(layout="wide", page_title="Sistema de Guichê", initial_sidebar_state="collapsed")
+# --- Configurações e Inicialização Global ---
+st.set_page_config(layout="wide", page_title="Sistema de Guichê Unificado")
 
-# ATENÇÃO: SUBSTITUA ESTA VARIÁVEL PELA URL ATIVA ATUAL DO SEU APLICATIVO!
-# Exemplo (NÃO COPIE): APP_URL_BASE = "https://guicheshopee-h...streamli.app"
-APP_URL_BASE = "COLOQUE_AQUI_A_URL_COMPLETA_DO_SEU_APP" 
+# --- Variáveis de Lógica ---
+PREFIXO = 'A'
+GUICHES_DISPONIVEIS = [10, 20, 30, 40]
 
-# CSS para esconder a barra lateral e o menu de opções em todas as visualizações
-st.markdown("""
-    <style>
-    [data-testid="stSidebar"] {
-        display: none;
-    }
-    .css-vk3250 {
-        visibility: hidden;
-    }
-    /* Estilos para botões na Home Page */
-    .link-button-style {
-        text-decoration: none;
-        display: block;
-        width: 100%;
-        text-align: center;
-        padding: 15px 10px;
-        border-radius: 8px;
-        font-size: 20px;
-        font-weight: bold;
-        margin: 15px 0;
-        cursor: pointer;
-        transition: background-color 0.3s;
-    }
-    </style>
-""", unsafe_allow_html=True)
-
-# --- Inicialização Global do Estado ---
+# 🔑 Variável de Controle de Visualização
+# Inicializa a vista para o menu
+if 'view' not in st.session_state:
+    st.session_state.view = 'menu'
+    
+# --- Inicialização de Estado do Guichê (Apenas uma vez) ---
 if 'senha_atual' not in st.session_state:
     st.session_state.senha_atual = 0 
 if 'vaga_atual' not in st.session_state:
@@ -40,33 +21,128 @@ if 'vaga_atual' not in st.session_state:
 if 'ultima_chamada_display' not in st.session_state:
     st.session_state.ultima_chamada_display = 'A-0'
 
-# --- Layout da Home Page ---
-st.title("Sistema de Guichê: Escolha seu Modo")
-st.markdown("---")
-st.header("Qual é a sua função nesta tela?")
+# --- CSS Único para Todo o App ---
+st.markdown("""
+    <style>
+    /* CSS para o Menu Inicial */
+    .menu-box {
+        padding: 40px; margin: 20px 0; border-radius: 20px; box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+        text-align: center; height: 250px; display: flex; flex-direction: column; justify-content: center;
+    }
+    /* CSS para o Monitor */
+    .big-font-senha {
+        font-size: 150px !important; font-weight: 900; color: #e74c3c; text-align: center; padding-top: 20px;
+    }
+    .big-font-vaga {
+        font-size: 100px !important; font-weight: 900; color: #3498db; text-align: center; padding-top: 20px;
+    }
+    .monitor-box-page {
+        padding: 40px; margin: 20px 0; border-radius: 20px; box-shadow: 0 8px 16px rgba(0,0,0,0.3);
+        text-align: center; height: 350px; display: flex; flex-direction: column; justify-content: center;
+    }
+    /* CSS para Atendente */
+    .stButton>button {
+        width: 100%; height: 100px; font-size: 24px; background-color: #2ecc71; color: white; border-radius: 10px; margin: 10px 0;
+    }
+    </style>
+""", unsafe_allow_html=True)
 
-# --- Botão Atendente (Link Absoluto) ---
-st.markdown(
-    f"""
-    ### 🎛️ Para o Atendente (Controle)
-    <a href="{APP_URL_BASE}/Atendente" target="_self" class="link-button-style" style="background-color: #2ecc71; color: white;">
-        CLIQUE PARA ABRIR O ATENDENTE
-    </a>
-    """,
-    unsafe_allow_html=True
-)
 
-st.markdown("---")
+# --- Funções de Lógica ---
+def formatar_senha(numero):
+    return f"{PREFIXO}-{numero}"
 
-# --- Botão Monitor (Link Absoluto - Nova Aba) ---
-st.markdown(
-    f"""
-    ### 🖥️ Para o Monitor (Tela Pública)
-    <a href="{APP_URL_BASE}/Monitor" target="_blank" class="link-button-style" style="background-color: #3498db; color: white;">
-        CLIQUE PARA ABRIR O MONITOR
-    </a>
-    """,
-    unsafe_allow_html=True
-)
+def chamar_senha(vaga_chamada):
+    st.session_state.senha_atual += 1
+    nova_senha_formatada = formatar_senha(st.session_state.senha_atual)
+    
+    st.session_state.vaga_atual = str(vaga_chamada)
+    st.session_state.ultima_chamada_display = nova_senha_formatada
+    
+    st.toast(f"🔔 Chamando: {nova_senha_formatada} na VAGA {vaga_chamada}", icon="✅")
 
-st.caption("O Monitor abrirá em uma nova aba. O Atendente abrirá nesta aba. Se o problema de 'ir e voltar' persistir, a única solução será usar a barra lateral ou mudar o domínio de hospedagem.")
+# ==========================================================
+## 1. Módulo Monitor (Visão do Cliente)
+# ==========================================================
+def view_monitor():
+    st.markdown("<h1>🔔 Painel de Chamada ao Cliente</h1>", unsafe_allow_html=True)
+
+    col_senha, col_vaga = st.columns(2)
+
+    with col_senha:
+        st.markdown('<div class="monitor-box-page" style="background-color: #ffe0e0;"><h3>SENHA CHAMADA</h3></div>', unsafe_allow_html=True)
+        st.markdown(f'<p class="big-font-senha">{st.session_state.ultima_chamada_display}</p>', unsafe_allow_html=True)
+
+    with col_vaga:
+        st.markdown('<div class="monitor-box-page" style="background-color: #e0f2ff;"><h3>DIRIJA-SE AO GUICHÊ</h3></div>', unsafe_allow_html=True)
+        st.markdown(f'<p class="big-font-vaga">{st.session_state.vaga_atual}</p>', unsafe_allow_html=True)
+
+    # Força a atualização da página a cada 1 segundo (Polling)
+    time.sleep(1) 
+    st.experimental_rerun()
+
+# ==========================================================
+## 2. Módulo Atendente (Controle)
+# ==========================================================
+def view_atendente():
+    st.title("Sistema de Chamada de Guichê")
+
+    st.info(f"Próxima Senha a Chamar: **{formatar_senha(st.session_state.senha_atual + 1)}**")
+    st.subheader(f"Última Chamada: **{st.session_state.ultima_chamada_display}** na Vaga **{st.session_state.vaga_atual}**")
+
+    st.markdown("---")
+
+    st.subheader("Clique no seu Guichê para Chamar a Próxima Senha")
+
+    cols = st.columns(len(GUICHES_DISPONIVEIS))
+
+    for i, vaga in enumerate(GUICHES_DISPONIVEIS):
+        with cols[i]:
+            if st.button(f"Guichê {vaga}", key=f"btn_{vaga}"):
+                chamar_senha(vaga)
+                st.experimental_rerun() # Necessário para atualizar o display de info
+            
+    st.markdown("---")
+    if st.button("Voltar ao Menu", key="back_menu"):
+        st.session_state.view = 'menu'
+        st.experimental_rerun()
+
+# ==========================================================
+## 3. Módulo Menu (Inicial)
+# ==========================================================
+def view_menu():
+    st.title("Sistema de Guichê: Escolha seu Modo")
+    st.markdown("---")
+    st.header("Qual é a sua função nesta tela?")
+
+    col1, col2 = st.columns(2)
+
+    with col1:
+        st.markdown('<div class="menu-box" style="background-color: #e0f2ff;"><h3>TELA DO CLIENTE</h3></div>', unsafe_allow_html=True)
+        if st.button("Sou MONITOR", key="btn_monitor", type="primary"):
+            st.session_state.view = 'monitor'
+            st.experimental_rerun() 
+
+    with col2:
+        st.markdown('<div class="menu-box" style="background-color: #ffe0e0;"><h3>TELA DE CONTROLE</h3></div>', unsafe_allow_html=True)
+        if st.button("Sou ATENDENTE", key="btn_atendente", type="primary"):
+            st.session_state.view = 'atendente'
+            st.experimental_rerun() 
+
+    st.markdown("---")
+    st.caption("Acesse a mesma URL em telas diferentes e selecione os modos.")
+
+# ==========================================================
+## 4. Roteador Principal (Execução)
+# ==========================================================
+
+# O Streamlit executa o código do topo para baixo. 
+# O roteador decide qual função chamar com base no estado.
+
+if st.session_state.view == 'monitor':
+    view_monitor()
+elif st.session_state.view == 'atendente':
+    view_atendente()
+else:
+    # 'menu' é o padrão
+    view_menu()
