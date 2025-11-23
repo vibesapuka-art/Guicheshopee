@@ -2,14 +2,11 @@ import streamlit as st
 
 st.set_page_config(layout="wide", page_title="Sistema de Guichê", initial_sidebar_state="collapsed")
 
-# ATENÇÃO: SUBSTITUA ESTA VARIÁVEL PELA URL REAL DO SEU APLICATIVO!
-# Exemplo baseado no seu print: https://guicheshopee-f...z2.streamlit.app/
-# Use a URL completa do seu navegador, SEM a barra final (/)
-APP_URL_BASE = "https://SEU-SUBDOMINIO-AQUI.streamlit.app" 
-# Exemplo se sua URL for: https://guicheshopee-abc.streamlit.app
-# Coloque: APP_URL_BASE = "https://guicheshopee-abc.streamlit.app" 
+# ATENÇÃO: SUBSTITUA ESTA VARIÁVEL PELA URL ATIVA ATUAL DO SEU APLICATIVO!
+# Exemplo (NÃO COPIE): APP_URL_BASE = "https://guicheshopee-h...streamli.app"
+APP_URL_BASE = "COLOQUE_AQUI_A_URL_COMPLETA_DO_SEU_APP" 
 
-# CSS para esconder a barra lateral e o menu de opções
+# CSS para esconder a barra lateral e o menu de opções em todas as visualizações
 st.markdown("""
     <style>
     [data-testid="stSidebar"] {
@@ -48,7 +45,7 @@ st.title("Sistema de Guichê: Escolha seu Modo")
 st.markdown("---")
 st.header("Qual é a sua função nesta tela?")
 
-# --- Botão Atendente ---
+# --- Botão Atendente (Link Absoluto) ---
 st.markdown(
     f"""
     ### 🎛️ Para o Atendente (Controle)
@@ -61,7 +58,7 @@ st.markdown(
 
 st.markdown("---")
 
-# --- Botão Monitor ---
+# --- Botão Monitor (Link Absoluto - Nova Aba) ---
 st.markdown(
     f"""
     ### 🖥️ Para o Monitor (Tela Pública)
@@ -72,4 +69,4 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-st.caption("O Monitor abrirá em uma nova aba. O Atendente abrirá nesta aba.")
+st.caption("O Monitor abrirá em uma nova aba. O Atendente abrirá nesta aba. Se o problema de 'ir e voltar' persistir, a única solução será usar a barra lateral ou mudar o domínio de hospedagem.")
