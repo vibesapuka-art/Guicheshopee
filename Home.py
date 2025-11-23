@@ -2,7 +2,7 @@ import streamlit as st
 
 st.set_page_config(layout="wide", page_title="Sistema de Guichê", initial_sidebar_state="collapsed")
 
-# CSS para garantir que a barra lateral de navegação não apareça aqui
+# CSS para esconder a barra lateral de navegação aqui
 st.markdown("""
     <style>
     [data-testid="stSidebar"] {
@@ -23,13 +23,8 @@ if 'ultima_chamada_display' not in st.session_state:
     st.session_state.ultima_chamada_display = 'A-0'
 
 # --- Funções de Redirecionamento ---
-def go_to_monitor():
-    # Usa o nome do arquivo da página de destino (sem .py)
-    st.switch_page("pages/1_Monitor") 
-
-def go_to_atendente():
-    # Usa o nome do arquivo da página de destino (sem .py)
-    st.switch_page("pages/2_Atendente") 
+# Não precisam de definição, pois a chamada direta já funciona
+# Apenas a lógica do botão precisa ser corrigida
 
 # --- Layout da Home Page ---
 st.title("Sistema de Guichê: Escolha seu Modo")
@@ -50,15 +45,17 @@ col1, col2 = st.columns(2)
 
 with col1:
     st.markdown('<div class="monitor-box-home" style="background-color: #e0f2ff;"><h3>TELA DO CLIENTE</h3></div>', unsafe_allow_html=True)
-    # 🟢 Ação: Chama a função de navegação interna
+    
+    # 🟢 CORREÇÃO: switch_page SÓ É CHAMADO SE O BOTÃO FOR CLICADO
     if st.button("Sou MONITOR", key="btn_monitor", type="primary"):
-        go_to_monitor()
+        st.switch_page("pages/1_Monitor") 
 
 with col2:
     st.markdown('<div class="monitor-box-home" style="background-color: #ffe0e0;"><h3>TELA DE CONTROLE</h3></div>', unsafe_allow_html=True)
-    # 🟢 Ação: Chama a função de navegação interna
+    
+    # 🟢 CORREÇÃO: switch_page SÓ É CHAMADO SE O BOTÃO FOR CLICADO
     if st.button("Sou ATENDENTE", key="btn_atendente", type="primary"):
-        go_to_atendente()
+        st.switch_page("pages/2_Atendente") 
         
 st.markdown("---")
 st.caption("Acesse a mesma URL em telas diferentes para sincronizar. Você só precisa clicar no botão uma vez por tela.")
