@@ -1,23 +1,32 @@
 import streamlit as st
 import time
 
-# --- Configuração ---
+# --- Configuração e CSS ---
 st.set_page_config(layout="wide", page_title="Monitor de Chamada")
 
-# --- CSS (Mantenha o CSS da versão anterior aqui) ---
+# --- Inicialização de Estado de Segurança ---
+# Garante que as chaves existam antes de serem usadas.
+if 'senha_atual' not in st.session_state:
+    st.session_state.senha_atual = 0 
+if 'vaga_atual' not in st.session_state:
+    st.session_state.vaga_atual = '---'
+if 'ultima_chamada_display' not in st.session_state:
+    st.session_state.ultima_chamada_display = 'A-0'
+
+# --- CSS Personalizado para a Tela do Monitor ---
 st.markdown("""
     <style>
     .big-font-senha {
         font-size: 150px !important;
         font-weight: 900;
-        color: #e74c3c;
+        color: #e74c3c; /* Vermelho */
         text-align: center;
         padding-top: 20px;
     }
     .big-font-vaga {
         font-size: 100px !important;
         font-weight: 900;
-        color: #3498db;
+        color: #3498db; /* Azul */
         text-align: center;
         padding-top: 20px;
     }
@@ -32,23 +41,15 @@ st.markdown("""
         flex-direction: column;
         justify-content: center;
     }
-    /* Esconde a barra lateral (sidebar) para o monitor */
+    /* Esconde a barra lateral e o menu de opções para o público */
     [data-testid="stSidebar"] {
         display: none;
     }
-    /* Esconde o menu de opções (três pontos) */
     .css-vk3250 {
         visibility: hidden;
     }
     </style>
 """, unsafe_allow_html=True)
-
-# --- 1. Inicialização do Estado (Acessa o estado do app principal) ---
-# Usamos o st.session_state do app principal.
-if 'vaga_atual' not in st.session_state:
-    st.session_state.vaga_atual = '---'
-if 'ultima_chamada_display' not in st.session_state:
-    st.session_state.ultima_chamada_display = 'A-0'
 
 # ==========================================================
 ## --- 🖥️ Tela do Monitor (Visão do Cliente) ---
@@ -68,4 +69,4 @@ with col_vaga:
 
 # Força a atualização da página a cada 1 segundo (Polling)
 time.sleep(1) 
-st.experimental_rerun() 
+st.experimental_rerun()
