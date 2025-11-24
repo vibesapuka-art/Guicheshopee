@@ -32,7 +32,8 @@ st.markdown("""
     .big-font-vaga { font-size: 130px !important; font-weight: 900; color: #3498db; text-align: center; padding-top: 20px; line-height: 1.1; }
     .monitor-box-page { padding: 40px; margin: 10px 0; border-radius: 20px; box-shadow: 0 8px 16px rgba(0,0,0,0.3); text-align: center; height: auto; display: flex; flex-direction: column; justify-content: center; }
     .stButton>button { width: 100%; height: 100px; font-size: 24px; background-color: #2ecc71; color: white; border-radius: 10px; margin: 10px 0; }
-    [data-testid="stSidebar"], .css-vk3250 { display: none; }
+    /* Esconde barra lateral e elementos desnecessários */
+    [data-testid="stSidebar"], .css-vk3250 { display: none; } 
     
     /* === ESTILOS PARA CHECKBOXES === */
     /* Checkbox Amarelo (Chamando) */
@@ -85,7 +86,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ==========================================================
-## Funções de Estado Compartilhado
+## Funções de Estado Compartilhado (JSON)
 # ==========================================================
 
 def read_shared_state():
@@ -102,6 +103,7 @@ def read_shared_state():
     with open(STATE_FILE, "r") as f:
         try:
             state = json.load(f)
+            # Garante que as chaves essenciais existam ao ler
             if 'senhas_status' not in state:
                 state['senhas_status'] = {}
             if 'vaga' not in state:
@@ -154,7 +156,7 @@ def chamar_senha(senha_completa, vaga_selecionada):
 
 
 # ==========================================================
-## 1. Módulo Monitor (Visão do Cliente - AJUSTE FINAL)
+## 1. Módulo Monitor (Visão do Cliente)
 # ==========================================================
 def view_monitor():
     estado_compartilhado = read_shared_state()
@@ -171,7 +173,7 @@ def view_monitor():
         st.markdown('<div class="monitor-box-page" style="background-color: #ffe0e0; padding: 20px;"><h3>GAIOLA</h3></div>', unsafe_allow_html=True) 
         st.markdown(f'<p class="big-font-senha">{estado_compartilhado["senha_display"]}</p>', unsafe_allow_html=True)
 
-        # O rótulo é VAGA (o local) - AJUSTADO AQUI: Removido "DIRIJA-SE À"
+        # O rótulo é VAGA (o local)
         st.markdown('<div class="monitor-box-page" style="background-color: #e0f2ff; padding: 20px;"><h3>VAGA</h3></div>', unsafe_allow_html=True)
         st.markdown(f'<p class="big-font-vaga">{estado_compartilhado["vaga"]}</p>', unsafe_allow_html=True)
 
@@ -207,7 +209,7 @@ def view_monitor():
     st.rerun() 
 
 # ==========================================================
-## 2. Módulo Atendente (Controle - Grade Rolável)
+## 2. Módulo Atendente (Controle - Grade Rolável Corrigida)
 # ==========================================================
 def view_atendente():
     estado_atual = read_shared_state()
@@ -273,10 +275,11 @@ def view_atendente():
                         # Se já foi chamado (verde), o Atendente clicou para LIMPAR
                         estado_para_limpar = read_shared_state()
                         if senha in estado_para_limpar['senhas_status']:
+                            # Remove o status de cor
                             del estado_para_limpar['senhas_status'][senha]
                         write_shared_state(estado_para_limpar)
                         
-                        st.session_state[f"chk_{senha}"] = False
+                        # O RERUN faz o checkbox ser FALSE na próxima renderização.
                         st.rerun() 
                         
                     elif status == 'default':
@@ -289,6 +292,7 @@ def view_atendente():
 
     # --- 3. BOTÃO DE CHAMADA FINAL ---
     if senhas_a_chamar:
+        # Pega a primeira senha marcada para chamar
         senha_final = senhas_a_chamar[0]
         
         if st.button(f"CHAMAR GAIOLA: {senha_final} para {selected_vaga}", key="btn_chamar_final"):
@@ -303,7 +307,7 @@ def view_atendente():
         st.rerun()
 
 # ==========================================================
-## 3. Módulo Menu (Inicial)
+## 3. Módulo Menu (Inicial - Oculta-se ao selecionar)
 # ==========================================================
 def view_menu():
     st.title("Sistema de Guichê: Escolha seu Modo")
@@ -336,4 +340,5 @@ if st.session_state.view == 'monitor':
 elif st.session_state.view == 'atendente':
     view_atendente()
 else:
+    # Mostra o menu apenas se não estiver em outro modo
     view_menu()
